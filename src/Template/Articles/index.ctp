@@ -29,7 +29,12 @@
                             ['confirm' => 'Are you sure?']) .
                         " | " . $this->Html->link('Edit', ['action' => 'edit', $article->id]);
                 } else {
-                    echo 'Delete | Edit';
+                    echo $this->Form->postLink(
+                            'Delete',
+                            ['action' => 'delete', $article->id],
+                            ['confirm' => 'Are you sure?']) .
+                        " | " . $this->Html->link('Edit', ['action' => 'edit', $article->id]);
+//                    echo 'Delete | Edit';
                 } ?>
             </td>
         </tr>
