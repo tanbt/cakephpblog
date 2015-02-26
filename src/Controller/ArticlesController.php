@@ -1,4 +1,10 @@
 <?php
+/**
+ * Created by PhpStorm.
+ * User: tanub
+ * Date: 16/12/2014
+ * Time: 21:54
+ */
 
 namespace App\Controller;
 
@@ -84,7 +90,6 @@ class ArticlesController extends AppController {
     public function delete($id)
     {
         $this->request->allowMethod(['post', 'delete']);
-
         $article = $this->Articles->get($id);
         if ($this->Articles->delete($article)) {
             $this->Flash->success(__('The article with id: {0} has been deleted.', h($id)));

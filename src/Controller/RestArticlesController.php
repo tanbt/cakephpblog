@@ -45,7 +45,7 @@ class RestArticlesController extends AppController {
 
     /**
     GET /api/is/rest_articles.xml HTTP/1.1
-    Host: cakephp3blog.com
+    Host: cakephpblog.com
     Cache-Control: no-cache
      */
     public function index()
@@ -58,7 +58,7 @@ class RestArticlesController extends AppController {
         //$this->render('/Articles/xml/index');     //specify the XML template
     }
     /**
-    http://cakephp3blog.com/api/is/rest_articles/1.xml
+    http://cakephpblog.com/api/is/rest_articles/1.xml
      */
     public function view($id)
     {
@@ -70,7 +70,7 @@ class RestArticlesController extends AppController {
     }
     /**
     POST /api/is/rest_articles.xml HTTP/1.1
-    Host: cakephp3blog.com
+    Host: cakephpblog.com
     Cache-Control: no-cache
 
     ----WebKitFormBoundaryE19zNvXGzXaLvS5C
@@ -108,19 +108,19 @@ class RestArticlesController extends AppController {
     }
     /**
     PATCH /api/is/rest_articles/10.xml HTTP/1.1
-    Host: cakephp3blog.com
+    Host: cakephpblog.com
     Cache-Control: no-cache
     Content-Type: application/x-www-form-urlencoded             //MUST USE THIS CONTENT TYPE
     title=update+using+Patch&body=body+update+using+patch
      **************************************************************************
     PUT /api/is/rest_articles/10.xml HTTP/1.1
-    Host: cakephp3blog.com
+    Host: cakephpblog.com
     Cache-Control: no-cache
     Content-Type: application/x-www-form-urlencoded
     title=update++using+PUT&body=A+body+once+again+REST
      **************************************************************************
     PATCH /api/is/rest_articles/10.xml HTTP/1.1
-    Host: cakephp3blog.com
+    Host: cakephpblog.com
     Cache-Control: no-cache
     Content-Type: application/x-www-form-urlencoded
     title=update+using+partial+PATCH
@@ -143,7 +143,7 @@ class RestArticlesController extends AppController {
     }
     /**
     DELETE /api/is/rest_articles/10.xml HTTP/1.1
-    Host: cakephp3blog.com
+    Host: cakephpblog.com
     Cache-Control: no-cache
      */
     public function delete($id)

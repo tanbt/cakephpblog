@@ -19,7 +19,7 @@ use \Cake\Network\Request;
 
 class RestComponent extends  Component{
     private $api_prefix_url     = 'api/is/';
-    private $is_ips             = array('127.0.0.1', '192.168.21.72');
+    private $is_ips             = array('127.0.0.1', '192.168.21.52');
 
     public function __construct($ComponentRegistry, $data = null){
         if($data){
