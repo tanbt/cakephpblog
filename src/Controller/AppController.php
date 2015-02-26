@@ -7,13 +7,15 @@
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
- * @link      http://cakephp.org CakePHP(tm) Project
- * @since     0.2.9
- * @license   http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
+ * @since         0.2.9
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace App\Controller;
 
+use Cake\Event\Event;
 use Cake\Controller\Controller;
 
 /**
@@ -24,8 +26,7 @@ use Cake\Controller\Controller;
  *
  * @link http://book.cakephp.org/3.0/en/controllers.html#the-app-controller
  */
-class AppController extends Controller
-{
+class AppController extends Controller {
 
     /**
      * Initialization hook method.
@@ -37,5 +38,42 @@ class AppController extends Controller
     public function initialize()
     {
         $this->loadComponent('Flash');
+        $this->loadComponent('Csrf', [
+            'secure' => true
+        ]);
+        $this->loadComponent('Auth', [
+            'authorize' => ['Controller'], //require each controller to manage its authorize manually
+
+            // this redirect will be run if no session Auth.redirect
+            'loginRedirect' => [
+                'controller' => 'Articles',
+                'action' => 'index'
+            ],
+            'logoutRedirect' => [
+                'controller' => 'Articles',
+                'action' => 'index',
+            ]
+        ]);
+    }
+
+    public function beforeFilter(Event $event)
+    {
+        $this->Auth->allow(['index', 'view']);
+    }
+
+    public function isAuthorized($user)
+    {
+        // Admin can access every action
+        if (isset($user['role']) && $user['role'] === 'admin') {
+            return true;
+        }
+
+        // Default deny
+        return false;
     }
 }
+
+/*
+ * DebugKit is integrated, try to fix by sudo apt-get install php5-sqlite
+ * See more on project/log/error file
+ */
