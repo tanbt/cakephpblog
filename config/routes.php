@@ -74,6 +74,17 @@ Router::scope('/', function ($routes) {
 });
 
 /**
+ * For REST access
+ * Example url:
+ *     http://cakephpblog.com/api/is/rest_articles.xml
+ */
+
+Router::scope('/api/is', function ($routes) {
+    $routes->extensions(['json', 'xml']);
+    $routes->resources('RestArticles');
+});
+
+/**
  * Load all plugin routes.  See the Plugin documentation on
  * how to customize the loading of plugin routes.
  */
