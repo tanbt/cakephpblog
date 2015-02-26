@@ -1,7 +1,5 @@
 <?php
 
-
-
 $this->extend('/Common/Articles/view');
 $this->assign('title', $article->title);        //example: block content by text
 ?>

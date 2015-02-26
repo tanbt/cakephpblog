@@ -32,7 +32,7 @@ use Cake\Validation\Validator;
 class ArticlesTable extends Table {
     public function initialize(array $config) {
         $this->addBehavior('Timestamp');
-//        $this->addBehavior('Translate', ['fields' => ['title', 'body']]);
+        $this->addBehavior('Translate', ['fields' => ['title', 'body']]);       //hook to i18n table
     }
 
     public function validationDefault(Validator $validator)

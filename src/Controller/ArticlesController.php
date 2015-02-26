@@ -48,11 +48,11 @@ class ArticlesController extends AppController {
         if (!$id) {
             throw new NotFoundException(__('Invalid article'));
         }
-//        \Cake\I18n\I18n::locale('vi');
+        \Cake\I18n\I18n::locale('vi');
 //        $articles = TableRegistry::get('Articles');
 //        $article = $articles->get($id);
-//        $article->title = 'Tiêu đề';
-//        $article->body = 'Đây là nội dung của bài báo số một.';
+//        $article->title = 'Tiêu đề tiếng việt';
+//        $article->body = 'Nội dung của bài báo số một bằng tiếng Việt.';
 //        $articles->save($article);
 
         $article = $this->Articles->get($id);
