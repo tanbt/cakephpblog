@@ -159,6 +159,14 @@ class RestArticlesController extends AppController {
         ]);
     }
 
+    public function select(){
+        $articles = $this->Articles->find('all');
+        $this->set([
+            'articles' => $articles,
+            '_serialize' => ['articles']          //manually render View in XML
+        ]);
+    }
+
     public function not_authorized(){
         $this->set([
             'message' => 'Not Authorized!',

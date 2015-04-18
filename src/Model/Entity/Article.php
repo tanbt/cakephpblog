@@ -25,4 +25,9 @@ class Article extends Entity{
         return $this->title . " - " . $this->body . "<br/>";
     }
 
+    protected function _setTitle($title){
+        var_dump($title);exit;
+        return strtoupper($title);
+    }
+
 } 

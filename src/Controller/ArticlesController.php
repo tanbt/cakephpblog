@@ -48,7 +48,7 @@ class ArticlesController extends AppController {
         if (!$id) {
             throw new NotFoundException(__('Invalid article'));
         }
-        \Cake\I18n\I18n::locale('vi');
+//        \Cake\I18n\I18n::locale('vi');
 //        $articles = TableRegistry::get('Articles');
 //        $article = $articles->get($id);
 //        $article->title = 'Tiêu đề tiếng việt';
@@ -58,6 +58,7 @@ class ArticlesController extends AppController {
         $article = $this->Articles->get($id);
         $this->set(compact('article'));
     }
+
     public function add()
     {
         $article = $this->Articles->newEntity($this->request->data);
@@ -71,6 +72,7 @@ class ArticlesController extends AppController {
         }
         $this->set('article', $article);
     }
+
     public function edit($id = null)
     {
         if (!$id) {
@@ -78,7 +80,10 @@ class ArticlesController extends AppController {
         }
         $article = $this->Articles->get($id);
         if ($this->request->is(['post', 'put'])) {
+
+            $this->request->data['title'] = [1,3,4];
             $this->Articles->patchEntity($article, $this->request->data);
+
             if ($this->Articles->save($article)) {
                 $this->Flash->success(__('Your article has been updated.'));
                 return $this->redirect(['action' => 'index']);
@@ -87,6 +92,7 @@ class ArticlesController extends AppController {
         }
         $this->set('article', $article);
     }
+
     public function delete($id)
     {
         $this->request->allowMethod(['post', 'delete']);
@@ -96,4 +102,7 @@ class ArticlesController extends AppController {
             return $this->redirect(['action' => 'index']);
         }
     }
+
+
+
 }
