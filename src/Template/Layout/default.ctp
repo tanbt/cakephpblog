@@ -47,6 +47,7 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
 						]);
 				?></span>
 			<span>
+				<?=Cake\Core\Configure::version();?>
 				<?=Cake\I18n\I18n::locale() ?> |
 				<a target="_blank" href="http://api.cakephp.org/3.0/">API</a> |
 				<a target="_blank" href="http://api.cakephp.org/3.0/">API</a>

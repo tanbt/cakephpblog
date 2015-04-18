@@ -71,11 +71,26 @@ Router::scope('/', function ($routes) {
      * routes you want in your application.
      */
 
-    //http://cakephpblog.com/thanhvien/view/1
+    $routes->connect('/config/:action/*', ['controller' => 'Utilities']);
+
+    //http://cakephpblog.com/thanhvien/add      //thanhvien/add has conflicted
+    //example alias controller
     //the action is required for this route
     $routes->connect('/thanhvien/:action/*', ['controller' => 'Users']);
 
-    //
+    $routes->connect(
+        '/job/:id-:title',
+        ['controller' => 'Articles', 'action' => 'view'],
+        [
+            'pass' => ['id', 'title '],
+            'id' => '[0-9]+'
+        ]
+    );
+
+
+    //MUST use http://cakephpblog.com/users/2 instead of http://cakephpblog.com/users/view/1
+    //set default action
+    //this config can cause lots of conflict (collide)
     //Inside the view() method, you would need to access the passed ID at $this->request->params['id'].
     $routes->connect(
         '/:controller/:id',
@@ -103,9 +118,6 @@ Router::scope('/blog', function ($routes) {
         '/update/*',
         ['controller' => 'Articles', 'action' => 'edit']
     );
-
-
-
 });
 
 /**

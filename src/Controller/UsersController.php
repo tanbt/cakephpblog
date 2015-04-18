@@ -50,7 +50,7 @@ class UsersController extends AppController{
         if (!$id && isset($this->request->params['id'])) {
             $id = $this->request->params['id'];
         } else {
-            throw new NotFoundException(__('Invalid article'));
+            throw new NotFoundException(__('Invalid user'));
         }
 
         $user = $this->Users->get($id);

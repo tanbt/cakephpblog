@@ -45,7 +45,7 @@ class ArticlesController extends AppController {
 
     public function view($id = null)
     {
-        if (!$id && isset($this->request->params['id'])) {
+        if ($id || isset($this->request->params['id'])) {
             $id = $this->request->params['id'];
         } else {
             throw new NotFoundException(__('Invalid article'));
@@ -77,9 +77,12 @@ class ArticlesController extends AppController {
 
     public function edit($id = null)
     {
-        if (!$id) {
+        if (!$id && isset($this->request->params['id'])) {
+            $id = $this->request->params['id'];
+        } else {
             throw new NotFoundException(__('Invalid article'));
         }
+
         $article = $this->Articles->get($id);
         if ($this->request->is(['post', 'put'])) {
 
