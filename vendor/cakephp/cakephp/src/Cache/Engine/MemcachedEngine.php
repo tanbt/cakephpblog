@@ -101,7 +101,7 @@ class MemcachedEngine extends CacheEngine
      */
     public function init(array $config = [])
     {
-        if (!class_exists('Memcached')) {
+        if (!extension_loaded('memcached')) {
             return false;
         }
 
@@ -115,7 +115,7 @@ class MemcachedEngine extends CacheEngine
         }
 
         parent::init($config);
-        
+
         if (!empty($config['host'])) {
             if (empty($config['port'])) {
                 $config['servers'] = [$config['host']];
@@ -241,7 +241,7 @@ class MemcachedEngine extends CacheEngine
      */
     protected function _parseServerString($server)
     {
-        if ($server[0] === 'u') {
+        if (strpos($server, 'unix://') === 0) {
             return [$server, 0];
         }
         if (substr($server, 0, 1) === '[') {

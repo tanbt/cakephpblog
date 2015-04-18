@@ -45,7 +45,9 @@ class ArticlesController extends AppController {
 
     public function view($id = null)
     {
-        if (!$id) {
+        if (!$id && isset($this->request->params['id'])) {
+            $id = $this->request->params['id'];
+        } else {
             throw new NotFoundException(__('Invalid article'));
         }
 //        \Cake\I18n\I18n::locale('vi');

@@ -142,7 +142,8 @@ class Inflector
         'tooth' => 'teeth',
         'goose' => 'geese',
         'foot' => 'feet',
-        'foe' => 'foes'
+        'foe' => 'foes',
+        'sieve' => 'sieves'
     ];
 
     /**
@@ -463,7 +464,7 @@ class Inflector
      *
      * ```
      * Inflector::rules('plural', ['/^(inflect)or$/i' => '\1ables']);
-     * Inflector::rules('irregular' => ['red' => 'redlings']);
+     * Inflector::rules('irregular', ['red' => 'redlings']);
      * Inflector::rules('uninflected', ['dontinflectme']);
      * Inflector::rules('transliteration', ['/å/' => 'aa']);
      * ```
@@ -754,6 +755,3 @@ class Inflector
         return preg_replace(array_keys($map), array_values($map), $string);
     }
 }
-
-// Store the initial state
-Inflector::reset();

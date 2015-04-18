@@ -40,17 +40,17 @@ class PostgresSchema extends BaseSchema
     {
         $sql =
         'SELECT DISTINCT table_schema AS schema, column_name AS name, data_type AS type,
-			is_nullable AS null, column_default AS default,
-			character_maximum_length AS char_length,
-			d.description as comment,
-			ordinal_position
-		FROM information_schema.columns c
-		INNER JOIN pg_catalog.pg_namespace ns ON (ns.nspname = table_schema)
-		INNER JOIN pg_catalog.pg_class cl ON (cl.relnamespace = ns.oid AND cl.relname = table_name)
-		LEFT JOIN pg_catalog.pg_index i ON (i.indrelid = cl.oid AND i.indkey[0] = c.ordinal_position)
-		LEFT JOIN pg_catalog.pg_description d on (cl.oid = d.objoid AND d.objsubid = c.ordinal_position)
-		WHERE table_name = ? AND table_schema = ? AND table_catalog = ?
-		ORDER BY ordinal_position';
+            is_nullable AS null, column_default AS default,
+            character_maximum_length AS char_length,
+            d.description as comment,
+            ordinal_position
+        FROM information_schema.columns c
+        INNER JOIN pg_catalog.pg_namespace ns ON (ns.nspname = table_schema)
+        INNER JOIN pg_catalog.pg_class cl ON (cl.relnamespace = ns.oid AND cl.relname = table_name)
+        LEFT JOIN pg_catalog.pg_index i ON (i.indrelid = cl.oid AND i.indkey[0] = c.ordinal_position)
+        LEFT JOIN pg_catalog.pg_description d on (cl.oid = d.objoid AND d.objsubid = c.ordinal_position)
+        WHERE table_name = ? AND table_schema = ? AND table_catalog = ?
+        ORDER BY ordinal_position';
 
         $schema = empty($config['schema']) ? 'public' : $config['schema'];
         return [$sql, [$tableName, $schema, $config['database']]];
@@ -103,7 +103,11 @@ class PostgresSchema extends BaseSchema
         if ($col === 'char' || $col === 'character') {
             return ['type' => 'string', 'fixed' => true, 'length' => $length];
         }
-        if (strpos($col, 'char') !== false) {
+        // money is 'string' as it includes arbitrary text content
+        // before the number value.
+        if (strpos($col, 'char') !== false ||
+            strpos($col, 'money') !== false
+        ) {
             return ['type' => 'string', 'length' => $length];
         }
         if (strpos($col, 'text') !== false) {
@@ -116,7 +120,6 @@ class PostgresSchema extends BaseSchema
             return ['type' => 'float', 'length' => null];
         }
         if (strpos($col, 'numeric') !== false ||
-            strpos($col, 'money') !== false ||
             strpos($col, 'decimal') !== false
         ) {
             return ['type' => 'decimal', 'length' => null];
@@ -138,6 +141,10 @@ class PostgresSchema extends BaseSchema
             if ($row['default'] === 'false') {
                 $row['default'] = 0;
             }
+        }
+        // Sniff out serial types.
+        if (in_array($field['type'], ['integer', 'biginteger']) && strpos($row['default'], 'nextval(') === 0) {
+            $field['autoIncrement'] = true;
         }
         $field += [
             'default' => $this->_defaultValue($row['default']),
@@ -181,24 +188,24 @@ class PostgresSchema extends BaseSchema
     public function describeIndexSql($tableName, $config)
     {
         $sql = 'SELECT
-			c2.relname,
-			i.indisprimary,
-			i.indisunique,
-			i.indisvalid,
-			pg_catalog.pg_get_indexdef(i.indexrelid, 0, true) AS statement
-		FROM pg_catalog.pg_class AS c,
-			pg_catalog.pg_class AS c2,
-			pg_catalog.pg_index AS i
-		WHERE c.oid  = (
-			SELECT c.oid
-			FROM pg_catalog.pg_class c
-			LEFT JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
-			WHERE c.relname = ?
-				AND n.nspname = ?
-		)
-		AND c.oid = i.indrelid
-		AND i.indexrelid = c2.oid
-		ORDER BY i.indisprimary DESC, i.indisunique DESC, c2.relname';
+            c2.relname,
+            i.indisprimary,
+            i.indisunique,
+            i.indisvalid,
+            pg_catalog.pg_get_indexdef(i.indexrelid, 0, true) AS statement
+        FROM pg_catalog.pg_class AS c,
+            pg_catalog.pg_class AS c2,
+            pg_catalog.pg_index AS i
+        WHERE c.oid  = (
+            SELECT c.oid
+            FROM pg_catalog.pg_class c
+            LEFT JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
+            WHERE c.relname = ?
+                AND n.nspname = ?
+        )
+        AND c.oid = i.indrelid
+        AND i.indexrelid = c2.oid
+        ORDER BY i.indisprimary DESC, i.indisunique DESC, c2.relname';
 
         $schema = 'public';
         if (!empty($config['schema'])) {
@@ -231,9 +238,10 @@ class PostgresSchema extends BaseSchema
             // If there is only one column in the primary key and it is integery,
             // make it autoincrement.
             $columnDef = $table->column($columns[0]);
-            if (count($columns) === 1 &&
-                in_array($columnDef['type'], ['integer', 'biginteger']) &&
-                $type === Table::CONSTRAINT_PRIMARY
+
+            if ($type === Table::CONSTRAINT_PRIMARY &&
+                count($columns) === 1 &&
+                in_array($columnDef['type'], ['integer', 'biginteger'])
             ) {
                 $columnDef['autoIncrement'] = true;
                 $table->addColumn($columns[0], $columnDef);
@@ -266,21 +274,35 @@ class PostgresSchema extends BaseSchema
      */
     public function describeForeignKeySql($tableName, $config)
     {
-        $sql = "SELECT
-			r.conname AS name,
-			r.confupdtype AS update_type,
-			r.confdeltype AS delete_type,
-			pg_catalog.pg_get_constraintdef(r.oid, true) AS definition
-			FROM pg_catalog.pg_constraint AS r
-			WHERE r.conrelid = (
-				SELECT c.oid
-				FROM pg_catalog.pg_class AS c,
-				pg_catalog.pg_namespace AS n
-				WHERE c.relname = ?
-				AND n.nspname = ?
-				AND n.oid = c.relnamespace
-			)
-			AND r.contype = 'f'";
+        $sql = "SELECT tc.constraint_name AS name,
+            tc.constraint_type AS type,
+            kcu.column_name,
+            rc.match_option AS match_type,
+
+            rc.update_rule AS on_update,
+            rc.delete_rule AS on_delete,
+            ccu.table_name AS references_table,
+            ccu.column_name AS references_field
+            FROM information_schema.table_constraints tc
+
+            LEFT JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_catalog = kcu.constraint_catalog
+            AND tc.constraint_schema = kcu.constraint_schema
+            AND tc.constraint_name = kcu.constraint_name
+
+            LEFT JOIN information_schema.referential_constraints rc
+            ON tc.constraint_catalog = rc.constraint_catalog
+            AND tc.constraint_schema = rc.constraint_schema
+            AND tc.constraint_name = rc.constraint_name
+
+            LEFT JOIN information_schema.constraint_column_usage ccu
+            ON rc.unique_constraint_catalog = ccu.constraint_catalog
+            AND rc.unique_constraint_schema = ccu.constraint_schema
+            AND rc.unique_constraint_name = ccu.constraint_name
+
+            WHERE tc.table_name = ?
+            AND tc.table_schema = ?
+            AND tc.constraint_type = 'FOREIGN KEY'";
 
         $schema = empty($config['schema']) ? 'public' : $config['schema'];
         return [$sql, [$tableName, $schema]];
@@ -291,22 +313,18 @@ class PostgresSchema extends BaseSchema
      */
     public function convertForeignKeyDescription(Table $table, $row)
     {
-        preg_match('/REFERENCES ([^\)]+)\(([^\)]+)\)/', $row['definition'], $matches);
-        $tableName = $matches[1];
-        $column = $matches[2];
-
-        preg_match('/FOREIGN KEY \(([^\)]+)\) REFERENCES/', $row['definition'], $matches);
-        $columns = $this->_convertColumnList($matches[1]);
-
-        $data = [
-            'type' => Table::CONSTRAINT_FOREIGN,
-            'columns' => $columns,
-            'references' => [$tableName, $column],
-            'update' => $this->_convertOnClause($row['update_type']),
-            'delete' => $this->_convertOnClause($row['delete_type']),
-        ];
-        $name = $row['name'];
-        $table->addConstraint($name, $data);
+        $data = $table->constraint($row['name']);
+        if (empty($data)) {
+            $data = [
+                'type' => Table::CONSTRAINT_FOREIGN,
+                'columns' => [],
+                'references' => [$row['references_table'], $row['references_field']],
+                'update' => $this->_convertOnClause($row['on_update']),
+                'delete' => $this->_convertOnClause($row['on_delete']),
+            ];
+        }
+        $data['columns'][] = $row['column_name'];
+        $table->addConstraint($row['name'], $data);
     }
 
     /**
@@ -314,13 +332,13 @@ class PostgresSchema extends BaseSchema
      */
     protected function _convertOnClause($clause)
     {
-        if ($clause === 'r') {
+        if ($clause === 'RESTRICT') {
             return Table::ACTION_RESTRICT;
         }
-        if ($clause === 'a') {
+        if ($clause === 'NO ACTION') {
             return Table::ACTION_NO_ACTION;
         }
-        if ($clause === 'c') {
+        if ($clause === 'CASCADE') {
             return Table::ACTION_CASCADE;
         }
         return Table::ACTION_SET_NULL;

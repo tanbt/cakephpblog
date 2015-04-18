@@ -35,20 +35,20 @@ class ArticlesTable extends Table {
         $this->addBehavior('Translate', ['fields' => ['title', 'body']]);       //hook to i18n table
     }
 
-//    public function validationDefault(Validator $validator)
-//    {
-//        $validator
-//            ->notEmpty('title')
-//            ->notEmpty('body')
-//            ->add('title', [
-//                'length' => [
-//                    'rule' => ['minLength', 10],
-//                    'message' => 'Titles need to be at least 10 characters long',
-//                ]
-//            ]);
-//
-//        return $validator;
-//    }
+    public function validationDefault(Validator $validator)
+    {
+        $validator
+            ->notEmpty('title')
+            ->notEmpty('body')
+            ->add('title', [
+                'length' => [
+                    'rule' => ['minLength', 10],
+                    'message' => 'Titles need to be at least 10 characters long',
+                ]
+            ]);
+
+        return $validator;
+    }
 
     public function isOwnedBy($articleId, $userId)
     {

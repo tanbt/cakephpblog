@@ -70,7 +70,42 @@ Router::scope('/', function ($routes) {
      * You can remove these routes once you've connected the
      * routes you want in your application.
      */
+
+    //http://cakephpblog.com/thanhvien/view/1
+    //the action is required for this route
+    $routes->connect('/thanhvien/:action/*', ['controller' => 'Users']);
+
+    //
+    //Inside the view() method, you would need to access the passed ID at $this->request->params['id'].
+    $routes->connect(
+        '/:controller/:id',
+        ['action' => 'view'],
+        ['id' => '[0-9]+', 'routeClass' => 'InflectedRoute']
+    );
+
     $routes->fallbacks('InflectedRoute');
+});
+
+Router::scope('/blog', function ($routes) {
+    //http://cakephpblog.com/blog
+    $routes->connect('/', ['controller' => 'Articles']);
+
+    //http://cakephpblog.com/blog/write
+    $routes->connect('/write', ['controller' => 'Articles', 'action' => 'add']);
+    $routes->connect(
+        '/*',
+        ['controller' => 'Articles', 'action' => 'view'],
+        ['id' => '[0-9]+']
+    );
+
+    //http://cakephpblog.com/blog/update/2
+    $routes->connect(
+        '/update/*',
+        ['controller' => 'Articles', 'action' => 'edit']
+    );
+
+
+
 });
 
 /**

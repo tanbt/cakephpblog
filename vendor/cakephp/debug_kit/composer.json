@@ -23,7 +23,7 @@
 		"source": "https://github.com/cakephp/debug_kit"
 	},
 	"require": {
-		"cakephp/cakephp": "3.0.*-dev"
+		"cakephp/cakephp": "~3.0"
 	},
 	"require-dev": {
 		"cakephp/cakephp-codesniffer": "dev-master",
@@ -41,9 +41,12 @@
 			"DebugKit\\Test\\": "tests"
 		}
 	},
+	"suggest": {
+		"ext-sqlite": "DebugKit needs to store panel data in a database. SQLite is simple and easy to use."
+	},
 	"extra": {
 		"branch-alias": {
-			"dev-master": "2.2.x-dev"
+			"dev-master": "3.0.x-dev"
 		}
 	}
 }

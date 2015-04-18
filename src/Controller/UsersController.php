@@ -5,6 +5,7 @@
  * Date: 29/12/2014
  * Time: 08:12
  */
+//admin, tan, tanbt:123456
 
 namespace App\Controller;
 
@@ -44,10 +45,12 @@ class UsersController extends AppController{
         $this->set('users', $this->Users->find('all'));
     }
 
-    public function view($id)
+    public function view($id = NULL)
     {
-        if (!$id) {
-            throw new NotFoundException(__('Invalid user'));
+        if (!$id && isset($this->request->params['id'])) {
+            $id = $this->request->params['id'];
+        } else {
+            throw new NotFoundException(__('Invalid article'));
         }
 
         $user = $this->Users->get($id);

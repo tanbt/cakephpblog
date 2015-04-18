@@ -22,6 +22,8 @@ use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Inflector;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * An Association is a relationship established between two tables and is used
@@ -173,6 +175,13 @@ abstract class Association
     protected $_finder = 'all';
 
     /**
+     * Valid strategies for this association. Subclasses can narrow this down.
+     *
+     * @var array
+     */
+    protected $_validStrategies = [self::STRATEGY_JOIN, self::STRATEGY_SELECT, self::STRATEGY_SUBQUERY];
+
+    /**
      * Constructor. Subclasses can override _options function to get the original
      * list of passed options if expecting any other special key
      *
@@ -199,7 +208,7 @@ abstract class Association
             }
         }
 
-        if (!$this->_className) {
+        if (empty($this->_className) && strpos($alias, '.')) {
             $this->_className = $alias;
         }
 
@@ -401,9 +410,8 @@ abstract class Association
     public function strategy($name = null)
     {
         if ($name !== null) {
-            $valid = [self::STRATEGY_JOIN, self::STRATEGY_SELECT, self::STRATEGY_SUBQUERY];
-            if (!in_array($name, $valid)) {
-                throw new \InvalidArgumentException(
+            if (!in_array($name, $this->_validStrategies)) {
+                throw new InvalidArgumentException(
                     sprintf('Invalid strategy "%s" was provided', $name)
                 );
             }
@@ -495,7 +503,7 @@ abstract class Association
         if (!empty($options['queryBuilder'])) {
             $dummy = $options['queryBuilder']($dummy);
             if (!($dummy instanceof Query)) {
-                throw new \RuntimeException(sprintf(
+                throw new RuntimeException(sprintf(
                     'Query builder for association "%s" did not return a query',
                     $this->name()
                 ));
@@ -640,6 +648,11 @@ abstract class Association
         $fields = $surrogate->clause('select') ?: $options['fields'];
         $target = $this->_targetTable;
         $autoFields = $surrogate->autoFields();
+
+        if ($query->eagerLoader()->autoFields() === false) {
+            return;
+        }
+
         if (empty($fields) && !$autoFields) {
             if ($options['includeFields'] && ($fields === null || $fields !== false)) {
                 $fields = $target->schema()->columns();
@@ -742,7 +755,7 @@ abstract class Association
 
         if (count($foreignKey) !== count($primaryKey)) {
             $msg = 'Cannot match provided foreignKey for "%s", got "(%s)" but expected foreign key for "(%s)"';
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 $msg,
                 $this->_name,
                 implode(', ', $foreignKey),

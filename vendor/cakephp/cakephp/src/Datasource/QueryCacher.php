@@ -34,7 +34,7 @@ class QueryCacher
      *
      * @param string|\Closure $key The key or function to generate a key.
      * @param string|CacheEngine $config The cache config name or cache engine instance.
-     * @throws RuntimeException
+     * @throws \RuntimeException
      */
     public function __construct($key, $config)
     {
@@ -71,7 +71,7 @@ class QueryCacher
      *
      * @param object $query The query the cache read is for.
      * @param \Traversable $results The result set to store.
-     * @return void
+     * @return bool True if the data was successfully cached, false on failure
      */
     public function store($query, Traversable $results)
     {

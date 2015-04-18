@@ -26,7 +26,7 @@ class Article extends Entity{
     }
 
     protected function _setTitle($title){
-        var_dump($title);exit;
+        //var_dump($title);exit;
         return strtoupper($title);
     }
 

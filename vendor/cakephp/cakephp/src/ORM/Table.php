@@ -17,6 +17,7 @@ namespace Cake\ORM;
 use ArrayObject;
 use BadMethodCallException;
 use Cake\Core\App;
+use Cake\Database\Connection;
 use Cake\Database\Schema\Table as Schema;
 use Cake\Database\Type;
 use Cake\Datasource\EntityInterface;
@@ -37,6 +38,7 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Rule\IsUnique;
 use Cake\Utility\Inflector;
 use Cake\Validation\Validator;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -359,6 +361,17 @@ class Table implements RepositoryInterface, EventListenerInterface
     }
 
     /**
+     * Alias a field with the table's current alias.
+     *
+     * @param string $field The field to alias.
+     * @return string The field prefixed with the table alias.
+     */
+    public function aliasField($field)
+    {
+        return $this->alias() . '.' . $field;
+    }
+
+    /**
      * Returns the table registry key used to create this table instance
      *
      * @param string|null $registryAlias the key used to access this object
@@ -381,11 +394,12 @@ class Table implements RepositoryInterface, EventListenerInterface
      * @param \Cake\Database\Connection|null $conn The new connection instance
      * @return \Cake\Database\Connection
      */
-    public function connection($conn = null)
+    public function connection(Connection $conn = null)
     {
         if ($conn === null) {
             return $this->_connection;
         }
+
         return $this->_connection = $conn;
     }
 
@@ -857,7 +871,6 @@ class Table implements RepositoryInterface, EventListenerInterface
      * - limit
      * - offset
      * - page
-     * - order
      * - group
      * - having
      * - contain
@@ -1052,7 +1065,7 @@ class Table implements RepositoryInterface, EventListenerInterface
     /**
      * {@inheritDoc}
      *
-     * @throws Cake\Datasource\Exception\InvalidPrimaryKeyException When $primaryKey has an
+     * @throws \Cake\Datasource\Exception\InvalidPrimaryKeyException When $primaryKey has an
      *      incorrect number of elements.
      */
     public function get($primaryKey, $options = [])
@@ -1294,6 +1307,9 @@ class Table implements RepositoryInterface, EventListenerInterface
      *   listeners will receive the entity and the options array as arguments. The type
      *   of operation performed (insert or update) can be determined by checking the
      *   entity's method `isNew`, true meaning an insert and false an update.
+     * - Model.afterSaveCommit: Will be triggered after the transaction is commited
+     *   for atomic save, listeners will receive the entity and the options array
+     *   as arguments.
      *
      * This method will determine whether the passed entity needs to be
      * inserted or updated in the database. It does that by checking the `isNew`
@@ -1333,7 +1349,8 @@ class Table implements RepositoryInterface, EventListenerInterface
             'atomic' => true,
             'associated' => true,
             'checkRules' => true,
-            'checkExisting' => true
+            'checkExisting' => true,
+            '_primary' => true
         ]);
 
         if ($entity->errors()) {
@@ -1344,13 +1361,25 @@ class Table implements RepositoryInterface, EventListenerInterface
             return $entity;
         }
 
+        $connection = $this->connection();
         if ($options['atomic']) {
-            $connection = $this->connection();
             $success = $connection->transactional(function () use ($entity, $options) {
                 return $this->_processSave($entity, $options);
             });
         } else {
             $success = $this->_processSave($entity, $options);
+        }
+
+        if ($success) {
+            if (!$connection->inTransaction() &&
+                ($options['atomic'] || (!$options['atomic'] && $options['_primary']))
+            ) {
+                $this->dispatchEvent('Model.afterSaveCommit', compact('entity', 'options'));
+            }
+            if ($options['atomic'] || $options['_primary']) {
+                $entity->isNew(false);
+                $entity->source($this->registryAlias());
+            }
         }
 
         return $success;
@@ -1393,7 +1422,7 @@ class Table implements RepositoryInterface, EventListenerInterface
             $this,
             $entity,
             $options['associated'],
-            $options->getArrayCopy()
+            ['_primary' => false] + $options->getArrayCopy()
         );
 
         if (!$saved && $options['atomic']) {
@@ -1414,13 +1443,15 @@ class Table implements RepositoryInterface, EventListenerInterface
                 $this,
                 $entity,
                 $options['associated'],
-                $options->getArrayCopy()
+                ['_primary' => false] + $options->getArrayCopy()
             );
             if ($success || !$options['atomic']) {
                 $entity->clean();
                 $this->dispatchEvent('Model.afterSave', compact('entity', 'options'));
-                $entity->isNew(false);
-                $entity->source($this->registryAlias());
+                if (!$options['atomic'] && !$options['_primary']) {
+                    $entity->isNew(false);
+                    $entity->source($this->registryAlias());
+                }
                 $success = true;
             }
         }
@@ -1452,24 +1483,25 @@ class Table implements RepositoryInterface, EventListenerInterface
                 'Cannot insert row in "%s" table, it has no primary key.',
                 $this->table()
             );
-            throw new \RuntimeException($msg);
+            throw new RuntimeException($msg);
         }
         $keys = array_fill(0, count($primary), null);
         $id = (array)$this->_newId($primary) + $keys;
         $primary = array_combine($primary, $id);
         $filteredKeys = array_filter($primary, 'strlen');
-        $data = $filteredKeys + $data;
+        $data = $data + $filteredKeys;
 
         if (count($primary) > 1) {
+            $schema = $this->schema();
             foreach ($primary as $k => $v) {
-                if (!isset($data[$k])) {
+                if (!isset($data[$k]) && empty($schema->column($k)['autoIncrement'])) {
                     $msg = 'Cannot insert row, some of the primary key values are missing. ';
                     $msg .= sprintf(
                         'Got (%s), expecting (%s)',
                         implode(', ', $filteredKeys + $entity->extract(array_keys($primary))),
                         implode(', ', array_keys($primary))
                     );
-                    throw new \RuntimeException($msg);
+                    throw new RuntimeException($msg);
                 }
             }
         }
@@ -1486,10 +1518,13 @@ class Table implements RepositoryInterface, EventListenerInterface
         if ($statement->rowCount() !== 0) {
             $success = $entity;
             $entity->set($filteredKeys, ['guard' => false]);
+            $schema = $this->schema();
+            $driver = $this->connection()->driver();
             foreach ($primary as $key => $v) {
                 if (!isset($data[$key])) {
                     $id = $statement->lastInsertId($this->table(), $key);
-                    $entity->set($key, $id);
+                    $type = $schema->columnType($key);
+                    $entity->set($key, Type::build($type)->toPHP($id, $driver));
                     break;
                 }
             }
@@ -1538,7 +1573,7 @@ class Table implements RepositoryInterface, EventListenerInterface
 
         if (!$entity->has($primaryColumns)) {
             $message = 'All primary key value(s) are needed for updating';
-            throw new \InvalidArgumentException($message);
+            throw new InvalidArgumentException($message);
         }
 
         $query = $this->query();
@@ -1570,10 +1605,14 @@ class Table implements RepositoryInterface, EventListenerInterface
      *
      * ### Events
      *
-     * - `beforeDelete` Fired before the delete occurs. If stopped the delete
+     * - `Model.beforeDelete` Fired before the delete occurs. If stopped the delete
      *   will be aborted. Receives the event, entity, and options.
-     * - `afterDelete` Fired after the delete has been successful. Receives
+     * - `Model.afterDelete` Fired after the delete has been successful. Receives
      *   the event, entity, and options.
+     * - `Model.afterDelete` Fired after the delete has been successful. Receives
+     *   the event, entity, and options.
+     * - `Model.afterDeleteCommit` Fired after the transaction is committed for
+     *   an atomic delete. Receives the event, entity, and options.
      *
      * The options argument will be converted into an \ArrayObject instance
      * for the duration of the callbacks, this allows listeners to modify
@@ -1582,16 +1621,33 @@ class Table implements RepositoryInterface, EventListenerInterface
      */
     public function delete(EntityInterface $entity, $options = [])
     {
-        $options = new ArrayObject($options + ['atomic' => true, 'checkRules' => true]);
+        $options = new ArrayObject($options + [
+            'atomic' => true,
+            'checkRules' => true,
+            '_primary' => true,
+        ]);
 
         $process = function () use ($entity, $options) {
             return $this->_processDelete($entity, $options);
         };
 
+        $connection = $this->connection();
         if ($options['atomic']) {
-            return $this->connection()->transactional($process);
+            $success = $connection->transactional($process);
+        } else {
+            $success = $process();
         }
-        return $process();
+
+        if ($success &&
+            !$connection->inTransaction() &&
+            ($options['atomic'] || (!$options['atomic'] && $options['_primary']))
+        ) {
+            $this->dispatchEvent('Model.afterDeleteCommit', [
+                'entity' => $entity,
+                'options' => $options
+            ]);
+        }
+        return $success;
     }
 
     /**
@@ -1615,7 +1671,7 @@ class Table implements RepositoryInterface, EventListenerInterface
         $primaryKey = (array)$this->primaryKey();
         if (!$entity->has($primaryKey)) {
             $msg = 'Deleting requires all primary key values.';
-            throw new \InvalidArgumentException($msg);
+            throw new InvalidArgumentException($msg);
         }
 
         if ($options['checkRules'] && !$this->checkRules($entity, RulesChecker::DELETE, $options)) {
@@ -1631,7 +1687,10 @@ class Table implements RepositoryInterface, EventListenerInterface
             return $event->result;
         }
 
-        $this->_associations->cascadeDelete($entity, $options->getArrayCopy());
+        $this->_associations->cascadeDelete(
+            $entity,
+            ['_primary' => false] + $options->getArrayCopy()
+        );
 
         $query = $this->query();
         $conditions = (array)$entity->extract($primaryKey);
@@ -1793,7 +1852,7 @@ class Table implements RepositoryInterface, EventListenerInterface
     {
         $association = $this->_associations->get($property);
         if (!$association) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Table "%s" is not associated with "%s"',
                 get_class($this),
                 $property
@@ -2147,8 +2206,10 @@ class Table implements RepositoryInterface, EventListenerInterface
             'Model.beforeFind' => 'beforeFind',
             'Model.beforeSave' => 'beforeSave',
             'Model.afterSave' => 'afterSave',
+            'Model.afterSaveCommit' => 'afterSaveCommit',
             'Model.beforeDelete' => 'beforeDelete',
             'Model.afterDelete' => 'afterDelete',
+            'Model.afterDeleteCommit' => 'afterDeleteCommit',
             'Model.beforeRules' => 'beforeRules',
             'Model.afterRules' => 'afterRules',
         ];

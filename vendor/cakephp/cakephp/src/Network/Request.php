@@ -14,6 +14,7 @@
  */
 namespace Cake\Network;
 
+use ArrayAccess;
 use BadMethodCallException;
 use Cake\Core\Configure;
 use Cake\Network\Exception\MethodNotAllowedException;
@@ -28,7 +29,7 @@ use Cake\Utility\Hash;
  *
  * `$request['controller']` or `$request->controller`.
  */
-class Request implements \ArrayAccess
+class Request implements ArrayAccess
 {
 
     /**
@@ -276,7 +277,7 @@ class Request implements \ArrayAccess
     {
         $method = $this->env('REQUEST_METHOD');
         if (in_array($method, ['PUT', 'DELETE', 'PATCH']) &&
-            strpos($this->env('CONTENT_TYPE'), 'application/x-www-form-urlencoded') === 0
+            strpos($this->contentType(), 'application/x-www-form-urlencoded') === 0
         ) {
             $data = $this->input();
             parse_str($data, $data);
@@ -470,6 +471,20 @@ class Request implements \ArrayAccess
             }
         }
         return $data;
+    }
+
+    /**
+     * Get the content type used in this request.
+     *
+     * @return string
+     */
+    public function contentType()
+    {
+        $type = $this->env('CONTENT_TYPE');
+        if ($type) {
+            return $type;
+        }
+        return $this->env('HTTP_CONTENT_TYPE');
     }
 
     /**
@@ -699,7 +714,7 @@ class Request implements \ArrayAccess
     {
         foreach ($detect['header'] as $header => $value) {
             $header = $this->env('http_' . $header);
-            if (!is_null($header)) {
+            if ($header !== null) {
                 if (!is_string($value) && !is_bool($value) && is_callable($value)) {
                     return call_user_func($value, $header);
                 }

@@ -16,6 +16,7 @@ namespace Cake\Datasource;
 
 use Cake\Collection\Collection;
 use Cake\Utility\Inflector;
+use InvalidArgumentException;
 use Traversable;
 
 /**
@@ -225,7 +226,7 @@ trait EntityTrait
         }
 
         if (!is_array($property)) {
-            throw new \InvalidArgumentException('Cannot set an empty property');
+            throw new InvalidArgumentException('Cannot set an empty property');
         }
         $options += ['setter' => true, 'guard' => $guard];
 
@@ -267,7 +268,7 @@ trait EntityTrait
     public function &get($property)
     {
         if (!strlen((string)$property)) {
-            throw new \InvalidArgumentException('Cannot get an empty property');
+            throw new InvalidArgumentException('Cannot get an empty property');
         }
 
         $value = null;
@@ -294,7 +295,7 @@ trait EntityTrait
     public function getOriginal($property)
     {
         if (!strlen((string)$property)) {
-            throw new \InvalidArgumentException('Cannot get an empty property');
+            throw new InvalidArgumentException('Cannot get an empty property');
         }
         if (isset($this->_original[$property])) {
             return $this->_original[$property];
@@ -606,7 +607,16 @@ trait EntityTrait
         if ($new === null) {
             return $this->_new;
         }
-        return $this->_new = (bool)$new;
+
+        $new = (bool)$new;
+
+        if ($new) {
+            foreach ($this->_properties as $k => $p) {
+                $this->_dirty[$k] = true;
+            }
+        }
+
+        return $this->_new = $new;
     }
 
     /**

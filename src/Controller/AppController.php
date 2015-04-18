@@ -17,6 +17,7 @@ namespace App\Controller;
 
 use Cake\Event\Event;
 use Cake\Controller\Controller;
+use Cake\I18n\I18n;
 
 /**
  * Application Controller
@@ -54,6 +55,7 @@ class AppController extends Controller {
 				'action' => 'index',
 			]
 		]);
+		I18n::locale('en_US');		//error on articles edit when set locale vi ?
 	}
 
 	public function beforeFilter(Event $event)

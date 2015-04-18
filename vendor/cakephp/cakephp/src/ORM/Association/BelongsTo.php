@@ -20,6 +20,7 @@ use Cake\ORM\Association;
 use Cake\ORM\Association\SelectableAssociationTrait;
 use Cake\ORM\Table;
 use Cake\Utility\Inflector;
+use RuntimeException;
 
 /**
  * Represents an 1 - N relationship where the source side of the relation is
@@ -31,6 +32,13 @@ class BelongsTo extends Association
 {
 
     use SelectableAssociationTrait;
+
+    /**
+     * Valid strategies for this type of association
+     *
+     * @var array
+     */
+    protected $_validStrategies = [self::STRATEGY_JOIN, self::STRATEGY_SELECT];
 
     /**
      * Sets the name of the field representing the foreign key to the target table.
@@ -160,7 +168,7 @@ class BelongsTo extends Association
 
         if (count($foreignKey) !== count($primaryKey)) {
             $msg = 'Cannot match provided foreignKey for "%s", got "(%s)" but expected foreign key for "(%s)"';
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 $msg,
                 $this->_name,
                 implode(', ', $foreignKey),

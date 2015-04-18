@@ -16,7 +16,6 @@ namespace Cake\Core;
 
 use Cake\Core\Exception\Exception;
 use Cake\Utility\Hash;
-use InvalidArgumentException;
 
 /**
  * A trait for reading and writing instance config
@@ -144,7 +143,6 @@ trait InstanceConfigTrait
             }
 
             $return = $return[$k];
-
         }
 
         return $return;
@@ -163,15 +161,12 @@ trait InstanceConfigTrait
     protected function _configWrite($key, $value, $merge = false)
     {
         if (is_string($key) && $value === null) {
-            return $this->_configDelete($key);
+            $this->_configDelete($key);
+            return;
         }
 
         if ($merge) {
-            if (is_array($key)) {
-                $update = $key;
-            } else {
-                $update = [$key => $value];
-            }
+            $update = is_array($key) ? $key : [$key => $value];
             if ($merge === 'shallow') {
                 $this->_config = array_merge($this->_config, Hash::expand($update));
             } else {

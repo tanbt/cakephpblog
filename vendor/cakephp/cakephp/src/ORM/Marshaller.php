@@ -105,6 +105,7 @@ class Marshaller
         $propertyMap = $this->_buildPropertyMap($options);
 
         $schema = $this->_table->schema();
+        $primaryKey = $schema->primaryKey();
         $entityClass = $this->_table->entityClass();
         $entity = new $entityClass();
         $entity->source($this->_table->registryAlias());
@@ -116,7 +117,6 @@ class Marshaller
         }
 
         $errors = $this->_validate($data, $options, true);
-        $primaryKey = $schema->primaryKey();
         $properties = [];
         foreach ($data as $key => $value) {
             if (!empty($errors[$key])) {
@@ -223,6 +223,9 @@ class Marshaller
         if ($assoc->type() === Association::MANY_TO_MANY) {
             return $marshaller->_belongsToMany($assoc, $value, (array)$options);
         }
+        if ($assoc->type() === Association::ONE_TO_MANY && array_key_exists('_ids', $value) && is_array($value['_ids'])) {
+            return $this->_loadAssociatedByIds($assoc, $value['_ids']);
+        }
         return $marshaller->many($value, (array)$options);
     }
 
@@ -262,16 +265,33 @@ class Marshaller
      */
     protected function _belongsToMany(Association $assoc, array $data, $options = [])
     {
+        // Accept _ids = [1, 2]
         $associated = isset($options['associated']) ? $options['associated'] : [];
         $hasIds = array_key_exists('_ids', $data);
         if ($hasIds && is_array($data['_ids'])) {
-            return $this->_loadBelongsToMany($assoc, $data['_ids']);
+            return $this->_loadAssociatedByIds($assoc, $data['_ids']);
         }
         if ($hasIds) {
             return [];
         }
+        $data = array_values($data);
 
-        $records = $this->many($data, $options);
+        // Accept [ [id => 1], [id = 2] ] style.
+        $primaryKey = array_flip($assoc->target()->schema()->primaryKey());
+        if (array_intersect_key($primaryKey, current($data)) === $primaryKey) {
+            $primaryCount = count($primaryKey);
+            $query = $assoc->find();
+            foreach ($data as $row) {
+                $keys = array_intersect_key($row, $primaryKey);
+                if (count($keys) === $primaryCount) {
+                    $query->orWhere($keys);
+                }
+            }
+            $records = $query->toArray();
+        } else {
+            $records = $this->many($data, $options);
+        }
+
         $joint = $assoc->junction();
         $jointMarshaller = $joint->marshaller();
 
@@ -296,7 +316,7 @@ class Marshaller
      * @param array $ids The list of ids to load.
      * @return array An array of entities.
      */
-    protected function _loadBelongsToMany($assoc, $ids)
+    protected function _loadAssociatedByIds($assoc, $ids)
     {
         $target = $assoc->target();
         $primaryKey = (array)$target->primaryKey();
@@ -315,6 +335,19 @@ class Marshaller
         }
 
         return $target->find()->where($filter)->toArray();
+    }
+
+    /**
+     * Loads a list of belongs to many from ids.
+     *
+     * @param Association $assoc The association class for the belongsToMany association.
+     * @param array $ids The list of ids to load.
+     * @return array An array of entities.
+     * @deprecated Use _loadAssociatedByIds()
+     */
+    protected function _loadBelongsToMany($assoc, $ids)
+    {
+        return $this->_loadAssociatedByIds($assoc, $ids);
     }
 
     /**
@@ -355,7 +388,7 @@ class Marshaller
 
         $errors = $this->_validate($data + $keys, $options, $isNew);
         $schema = $this->_table->schema();
-        $properties = [];
+        $properties = $marshalledAssocs = [];
         foreach ($data as $key => $value) {
             if (!empty($errors[$key])) {
                 continue;
@@ -367,6 +400,7 @@ class Marshaller
             if (isset($propertyMap[$key])) {
                 $assoc = $propertyMap[$key]['association'];
                 $value = $this->_mergeAssociation($original, $assoc, $value, $propertyMap[$key]);
+                $marshalledAssocs[$key] = true;
             } elseif ($columnType) {
                 $converter = Type::build($columnType);
                 $value = $converter->marshal($value);
@@ -384,12 +418,22 @@ class Marshaller
         if (!isset($options['fieldList'])) {
             $entity->set($properties);
             $entity->errors($errors);
+
+            foreach (array_keys($marshalledAssocs) as $field) {
+                if ($properties[$field] instanceof EntityInterface) {
+                    $entity->dirty($field, $properties[$field]->dirty());
+                }
+            }
             return $entity;
         }
 
         foreach ((array)$options['fieldList'] as $field) {
             if (array_key_exists($field, $properties)) {
                 $entity->set($field, $properties[$field]);
+                if ($properties[$field] instanceof EntityInterface &&
+                    isset($marshalledAssocs[$field])) {
+                    $entity->dirty($assoc, $properties[$field]->dirty());
+                }
             }
         }
 
@@ -529,7 +573,7 @@ class Marshaller
         $hasIds = array_key_exists('_ids', $value);
         $associated = isset($options['associated']) ? $options['associated'] : [];
         if ($hasIds && is_array($value['_ids'])) {
-            return $this->_loadBelongsToMany($assoc, $value['_ids']);
+            return $this->_loadAssociatedByIds($assoc, $value['_ids']);
         }
         if ($hasIds) {
             return [];

@@ -17,6 +17,7 @@ namespace Cake\I18n;
 use Carbon\Carbon;
 use IntlDateFormatter;
 use JsonSerializable;
+use RuntimeException;
 
 /**
  * Extends the built-in DateTime class to provide handy methods and locale-aware
@@ -502,7 +503,7 @@ class Time extends Carbon implements JsonSerializable
      * $time->i18nFormat(); // outputs '4/20/14, 10:10 PM' for the en-US locale
      * $time->i18nFormat(\IntlDateFormatter::FULL); // Use the full date and time format
      * $time->i18nFormat([\IntlDateFormatter::FULL, \IntlDateFormatter::SHORT]); // Use full date but short time format
-     * $time->i18nFormat('YYYY-MM-dd HH:mm:ss'); // outputs '2014-04-20 22:10'
+     * $time->i18nFormat('yyyy-MM-dd HH:mm:ss'); // outputs '2014-04-20 22:10'
      * ```
      *
      * If you wish to control the default format to be used for this method, you can alter
@@ -578,11 +579,16 @@ class Time extends Carbon implements JsonSerializable
         $key = "{$locale}.{$dateFormat}.{$timeFormat}.{$timezone}.{$calendar}.{$pattern}";
 
         if (!isset(static::$_formatters[$key])) {
+            if ($timezone === '+00:00') {
+                $timezone = 'UTC';
+            } elseif ($timezone[0] === '+' || $timezone[0] === '-') {
+                $timezone = 'GMT' . $timezone;
+            }
             static::$_formatters[$key] = datefmt_create(
                 $locale,
                 $dateFormat,
                 $timeFormat,
-                $timezone === '+00:00' ? 'UTC' : $timezone,
+                $timezone,
                 $calendar,
                 $pattern
             );
@@ -706,13 +712,15 @@ class Time extends Carbon implements JsonSerializable
             static::$defaultLocale,
             $dateFormat,
             $timeFormat,
-            null,
+            date_default_timezone_get(),
             null,
             $pattern
         );
         $time = $formatter->parse($time);
         if ($time) {
-            return new static('@' . $time);
+            $result = new static('@' . $time);
+            $result->setTimezone(date_default_timezone_get());
+            return $result;
         }
         return null;
     }
