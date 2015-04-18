@@ -30,4 +30,18 @@ class Article extends Entity{
         return strtoupper($title);
     }
 
+
+    protected function _getTitleUrl(){
+        return strtolower($this->toAscii($this->title));
+    }
+
+    //should use as a behaviour
+    private function toAscii($str) {
+        $clean = preg_replace("/[^a-zA-Z0-9\/_|+ -]/", '', $str);
+        $clean = strtolower(trim($clean, '-'));
+        $clean = preg_replace("/[\/_|+ -]+/", '-', $clean);
+
+        return $clean;
+    }
+
 } 

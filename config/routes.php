@@ -79,10 +79,11 @@ Router::scope('/', function ($routes) {
     $routes->connect('/thanhvien/:action/*', ['controller' => 'Users']);
 
     $routes->connect(
-        '/job/:id-:title',
+        '/job/:id-:title_url',
         ['controller' => 'Articles', 'action' => 'view'],
+        ['_name' => 'friendly_url_job'],
         [
-            'pass' => ['id', 'title '],
+            'pass' => ['id', 'title_url'],
             'id' => '[0-9]+'
         ]
     );
@@ -101,6 +102,7 @@ Router::scope('/', function ($routes) {
     $routes->fallbacks('InflectedRoute');
 });
 
+/*
 Router::scope('/blog', function ($routes) {
     //http://cakephpblog.com/blog
     $routes->connect('/', ['controller' => 'Articles']);
@@ -119,6 +121,7 @@ Router::scope('/blog', function ($routes) {
         ['controller' => 'Articles', 'action' => 'edit']
     );
 });
+*/
 
 /**
  * For REST access

@@ -14,7 +14,13 @@
         <tr>
             <td><?= $article->id ?></td>
             <td>
-                <?= $this->Html->link($article->title, ['action' => 'view', $article->id]) ?>
+                <?= $this->Html->link($article->title, [
+                    '_name' => 'friendly_url_job',
+                    'id' => $article->id,
+                    'title_url' => $article->title_url
+                ]);
+                ?>
+
             </td>
             <td>
                 <?= $article->created->format(DATE_RFC850) ?>

@@ -54,4 +54,5 @@ class ArticlesTable extends Table {
     {
         return $this->exists(['id' => $articleId, 'user_id' => $userId]);   //check on DB
     }
+
 } 
