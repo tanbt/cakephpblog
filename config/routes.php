@@ -102,6 +102,12 @@ Router::scope('/', function ($routes) {
     $routes->fallbacks('InflectedRoute');
 });
 
+Router::prefix('admin', function ($routes) {
+    $routes->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
+    $routes->connect('/login', ['controller' => 'Users', 'action' => 'login']);
+    $routes->connect('/', ['controller' => 'Pages', 'action' => 'index']);
+});
+
 /*
 Router::scope('/blog', function ($routes) {
     //http://cakephpblog.com/blog
