@@ -192,7 +192,7 @@ class TranslateBehavior extends Behavior
     public function beforeFind(Event $event, Query $query, $options)
     {
         $locale = $this->locale();
-
+var_dump($locale);
         if ($locale === $this->config('defaultLocale')) {
             return;
         }

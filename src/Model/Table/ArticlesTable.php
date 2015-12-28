@@ -38,6 +38,10 @@ class ArticlesTable extends Table {
     public function validationDefault(Validator $validator)
     {
         $validator
+            ->requirePresence('title', FALSE)
+            ->requirePresence('body', function ($context){
+                return FALSE;
+            })
             ->notEmpty('title')
             ->notEmpty('body')
             ->add('title', [

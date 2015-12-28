@@ -3,9 +3,9 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Feb 26, 2015 at 08:23 PM
--- Server version: 5.5.41-0ubuntu0.14.04.1-log
--- PHP Version: 5.5.9-1ubuntu4.6
+-- Generation Time: Aug 31, 2015 at 09:58 AM
+-- Server version: 5.5.44-0ubuntu0.14.04.1-log
+-- PHP Version: 5.5.9-1ubuntu4.11
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -34,16 +34,17 @@ CREATE TABLE IF NOT EXISTS `articles` (
   `modified` datetime DEFAULT NULL,
   `user_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=5 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=7 ;
 
 --
 -- Dumping data for table `articles`
 --
 
 INSERT INTO `articles` (`id`, `title`, `body`, `created`, `modified`, `user_id`) VALUES
-(1, 'The title', 'This is the article body.', '2015-02-26 15:41:16', NULL, 1),
+(1, 'UPDATE BY REST REST', 'asdf', '2015-02-26 15:41:16', '2015-08-31 02:58:00', 1),
 (2, 'A title once again', 'And the article body follows.', '2015-02-26 15:41:16', NULL, 2),
-(3, 'Tiêu đề', 'Đây là nội dung của bài báo số một.', '2015-02-26 15:41:16', '2015-02-26 09:29:18', 2);
+(3, 'third Article', 'third Article body', '2015-02-26 15:41:16', '2015-02-26 10:27:09', 2),
+(6, 'new article in web', 'new article in web body', '2015-02-26 10:23:25', '2015-02-26 10:23:25', 2);
 
 -- --------------------------------------------------------
 
@@ -68,8 +69,8 @@ CREATE TABLE IF NOT EXISTS `i18n` (
 --
 
 INSERT INTO `i18n` (`id`, `locale`, `model`, `foreign_key`, `field`, `content`) VALUES
-(1, 'vi', 'Articles', 1, 'title', 'Tiêu đề'),
-(2, 'vi', 'Articles', 1, 'body', 'Đây là nội dung của bài báo số một.');
+(1, 'vi', 'Articles', 1, 'title', 'TIêU đề TIếNG VIệT'),
+(2, 'vi', 'Articles', 1, 'body', 'Nội dung của bài báo số một bằng tiếng Việt.');
 
 -- --------------------------------------------------------
 
@@ -85,16 +86,16 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created` datetime DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=5 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=4 ;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `created`, `modified`) VALUES
-(2, 'admin', '$2y$10$y/mxU3oYfUKoKCvTOv0Q4.hsdjRl1uo30cldrlcKmXs7fjnzrvwga', 'admin', NULL, NULL),
-(3, 'tan', '$2y$10$C0vOBBqz6vT.lu0pBl516O7glVs6inivCNz4WyZFELeqjExf/l/zK', 'author', NULL, NULL),
-(4, 'tanbt', '$2y$10$mPHDJNjM3KEDPDYahN0iLeAZl/c35xdV2EVEvhfaUkaZ0rVCRs7kK', 'author', NULL, NULL);
+(1, 'admin', '$2y$10$y/mxU3oYfUKoKCvTOv0Q4.hsdjRl1uo30cldrlcKmXs7fjnzrvwga', 'admin', NULL, NULL),
+(2, 'tan', '$2y$10$C0vOBBqz6vT.lu0pBl516O7glVs6inivCNz4WyZFELeqjExf/l/zK', 'author', NULL, NULL),
+(3, 'tanbt', '$2y$10$mPHDJNjM3KEDPDYahN0iLeAZl/c35xdV2EVEvhfaUkaZ0rVCRs7kK', 'author', NULL, NULL);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

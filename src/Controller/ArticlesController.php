@@ -50,7 +50,8 @@ class ArticlesController extends AppController {
         } else {
             throw new NotFoundException(__('Invalid article'));
         }
-//        \Cake\I18n\I18n::locale('vi');
+
+        //\Cake\I18n\I18n::locale('vi');
 //        $articles = TableRegistry::get('Articles');
 //        $article = $articles->get($id);
 //        $article->title = 'Tiêu đề tiếng việt';
@@ -77,16 +78,13 @@ class ArticlesController extends AppController {
 
     public function edit($id = null)
     {
-        if (!$id && isset($this->request->params['id'])) {
-            $id = $this->request->params['id'];
-        } else {
-            throw new NotFoundException(__('Invalid article'));
+        if (!$id ){
+            return $this->redirect(['controller'    => 'Articles', 'action' => 'index']);
         }
 
         $article = $this->Articles->get($id);
         if ($this->request->is(['post', 'put'])) {
 
-            $this->request->data['title'] = [1,3,4];
             $this->Articles->patchEntity($article, $this->request->data);
 
             if ($this->Articles->save($article)) {
