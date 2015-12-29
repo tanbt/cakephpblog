@@ -1,62 +1,62 @@
 <?php
-
-/**
- * http://book.cakephp.org/3.0/en/orm/table-objects.html
- *
- * 1. Table convention
- *  class BlogPosts => blog_spots table
- *  1.1. specify table
-      public function initialize(array $config)
-        {
-            $this->table('my_table');
-        }
- *
- * 2. entity convention
- * ArticlesTable        => Article entity
- * PurchaseOrdersTable  => PurchaseOrder
- * 2.1. specify entity
- *     public function initialize(array $config)
-        {
-        $this->entityClass('App\Model\PO');
-        }
- *
- * 3. Cake\ORM\TableRegistry::clear
- */
-
 namespace App\Model\Table;
 
+use App\Model\Entity\Article;
+use Cake\ORM\Query;
+use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * Articles Model
+ */
+class ArticlesTable extends Table
+{
 
-class ArticlesTable extends Table {
-    public function initialize(array $config) {
+    /**
+     * Initialize method
+     *
+     * @param array $config The configuration for the Table.
+     * @return void
+     */
+    public function initialize(array $config)
+    {
+        $this->table('articles');
+        $this->displayField('title');
+        $this->primaryKey('id');
         $this->addBehavior('Timestamp');
-        $this->addBehavior('Translate', ['fields' => ['title', 'body']]);       //hook to i18n table
+        $this->belongsTo('Users', [
+            'foreignKey' => 'user_id'
+        ]);
     }
 
+    /**
+     * Default validation rules.
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance.
+     * @return \Cake\Validation\Validator
+     */
     public function validationDefault(Validator $validator)
     {
         $validator
-            ->requirePresence('title', FALSE)
-            ->requirePresence('body', function ($context){
-                return FALSE;
-            })
-            ->notEmpty('title')
-            ->notEmpty('body')
-            ->add('title', [
-                'length' => [
-                    'rule' => ['minLength', 10],
-                    'message' => 'Titles need to be at least 10 characters long',
-                ]
-            ]);
+            ->add('id', 'valid', ['rule' => 'numeric'])
+            ->allowEmpty('id', 'create')
+            ->allowEmpty('title')
+            ->allowEmpty('body');
 
         return $validator;
     }
 
-    public function isOwnedBy($articleId, $userId)
+    /**
+     * Returns a rules checker object that will be used for validating
+     * application integrity.
+     *
+     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
+     * @return \Cake\ORM\RulesChecker
+     */
+    public function buildRules(RulesChecker $rules)
     {
-        return $this->exists(['id' => $articleId, 'user_id' => $userId]);   //check on DB
+        $rules->add($rules->existsIn(['user_id'], 'Users'));
+        return $rules;
     }
-
-} 
+}

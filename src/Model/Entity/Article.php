@@ -1,47 +1,25 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: tanub
- * Date: 04/01/2015
- * Time: 10:03
- */
-
-/**
- * http://book.cakephp.org/3.0/en/orm/entities.html
- * 1. Lazy Loading Associations
- *
- */
-
 namespace App\Model\Entity;
 
-use Cake\ORM\Behavior\Translate\TranslateTrait;
 use Cake\ORM\Entity;
 
+/**
+ * Article Entity.
+ */
+class Article extends Entity
+{
 
-class Article extends Entity{
-    use TranslateTrait;
-
-    public function display(){
-        return $this->title . " - " . $this->body . "<br/>";
-    }
-
-    protected function _setTitle($title){
-        //var_dump($title);exit;
-        return strtoupper($title);
-    }
-
-
-    protected function _getTitleUrl(){
-        return strtolower($this->toAscii($this->title));
-    }
-
-    //should use as a behaviour
-    private function toAscii($str) {
-        $clean = preg_replace("/[^a-zA-Z0-9\/_|+ -]/", '', $str);
-        $clean = strtolower(trim($clean, '-'));
-        $clean = preg_replace("/[\/_|+ -]+/", '-', $clean);
-
-        return $clean;
-    }
-
-} 
+    /**
+     * Fields that can be mass assigned using newEntity() or patchEntity().
+     *
+     * @var array
+     */
+    protected $_accessible = [
+        'title' => true,
+        'body' => true,
+        'user_id' => true,
+        'title_translation' => true,
+        'body_translation' => true,
+        '_i18n' => true,
+    ];
+}

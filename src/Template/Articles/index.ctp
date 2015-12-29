@@ -1,43 +1,51 @@
-<h1>Blog articles</h1>
-
-<table>
-    <tr>
-        <th>Id</th>
-        <th>Title</th>
-        <th>Created</th>
-        <th>Action</th>
-    </tr>
-
-    <!-- Here is where we iterate through our $articles query object, printing out article info -->
-
+<div class="actions columns large-2 medium-3">
+    <h3><?= __('Actions') ?></h3>
+    <ul class="side-nav">
+        <li><?= $this->Html->link(__('New Article'), ['action' => 'add']) ?></li>
+        <li><?= $this->Html->link(__('List Articles Title Translation'), ['controller' => 'Articles_title_translation', 'action' => 'index']) ?> </li>
+        <li><?= $this->Html->link(__('New Articles Title Translation'), ['controller' => 'Articles_title_translation', 'action' => 'add']) ?> </li>
+        <li><?= $this->Html->link(__('List Articles Body Translation'), ['controller' => 'Articles_body_translation', 'action' => 'index']) ?> </li>
+        <li><?= $this->Html->link(__('New Articles Body Translation'), ['controller' => 'Articles_body_translation', 'action' => 'add']) ?> </li>
+        <li><?= $this->Html->link(__('List I18n'), ['controller' => 'I18n', 'action' => 'index']) ?> </li>
+        <li><?= $this->Html->link(__('New I18n'), ['controller' => 'I18n', 'action' => 'add']) ?> </li>
+    </ul>
+</div>
+<div class="articles index large-10 medium-9 columns">
+    <table cellpadding="0" cellspacing="0">
+    <thead>
+        <tr>
+            <th><?= $this->Paginator->sort('id') ?></th>
+            <th><?= $this->Paginator->sort('title') ?></th>
+            <th><?= $this->Paginator->sort('created') ?></th>
+            <th><?= $this->Paginator->sort('modified') ?></th>
+            <th><?= $this->Paginator->sort('Users.username') ?></th>
+            <th class="actions"><?= __('Actions') ?></th>
+        </tr>
+    </thead>
+    <tbody>
     <?php foreach ($articles as $article): ?>
         <tr>
-            <td><?= $article->id ?></td>
-            <td>
-                <?= $this->Html->link($article->title, [
-                    '_name' => 'friendly_url_job',
-                    'id' => $article->id,
-                    'title_url' => $article->title_url
-                ]);
-                ?>
-
-            </td>
-            <td>
-                <?= $article->created->format(DATE_RFC850) ?>
-            </td>
-            <td>
-                <?php if ($this->Session->read('Auth.User')
-                    && ($this->Session->read('Auth.User.role') == 'admin'
-                    || $this->Session->read('Auth.User.id') == $article->user_id)){
-                    echo $this->Form->postLink(
-                            'Delete',
-                            ['action' => 'delete', $article->id],
-                            ['confirm' => 'Are you sure?']) .
-                        " | " . $this->Html->link('Edit', ['action' => 'edit', $article->id]);
-                } else {
-                    echo 'Delete | Edit';
-                } ?>
+            <td><?= $this->Number->format($article->id) ?></td>
+            <td><?= h($article->title) ?></td>
+            <td><?= h($article->created) ?></td>
+            <td><?= h($article->modified) ?></td>
+            <td><?= $article->user->username ?></td>
+            <td class="actions">
+                <?= $this->Html->link(__('View'), ['action' => 'view', $article->id]) ?>
+                <?= $this->Html->link(__('Edit'), ['action' => 'edit', $article->id]) ?>
+                <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $article->id], ['confirm' => __('Are you sure you want to delete # {0}?', $article->id)]) ?>
             </td>
         </tr>
+
     <?php endforeach; ?>
-</table>
+    </tbody>
+    </table>
+    <div class="paginator">
+        <ul class="pagination">
+            <?= $this->Paginator->prev('< ' . __('previous')) ?>
+            <?= $this->Paginator->numbers() ?>
+            <?= $this->Paginator->next(__('next') . ' >') ?>
+        </ul>
+        <p><?= $this->Paginator->counter() ?></p>
+    </div>
+</div>
