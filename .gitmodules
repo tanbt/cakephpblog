@@ -1,0 +1,6 @@
+[submodule "vendor/cakephp3-queue-plugin"]
+	path = vendor/cakephp3-queue-plugin
+	url = git@bitbucket.org:trungtan/cakephp3-queue-plugin.git
+[submodule "vendor/cakephp3-seo-plugin"]
+	path = vendor/cakephp3-seo-plugin
+	url = git@bitbucket.org:trungtan/cakephp3-seo-plugin.git
